@@ -16,18 +16,28 @@
         android:gravity="center" >
         
         <Button
-	        android:id="@+id/readAction"
 	        android:layout_width="wrap_content"
 	        android:layout_height="wrap_content"
-	        android:onClick="readAction"
+	        android:onClick="onReadAction"
 	        android:text="readAction" />
     
 	    <Button
-	        android:id="@+id/addAction"
 	        android:layout_width="wrap_content"
 	        android:layout_height="wrap_content"
-	        android:onClick="addAction"
+	        android:onClick="onAddAction"
 	        android:text="addAction" />
+	    
+	    <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:onClick="onSendSms"
+            android:text="sendSms" />
+	    
+	    <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:onClick="onVerifySms"
+            android:text="verifySms" />
     </LinearLayout>
     </HorizontalScrollView>
     

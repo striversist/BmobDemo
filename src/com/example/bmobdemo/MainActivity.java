@@ -18,17 +18,22 @@ import android.text.TextUtils;
 import android.text.style.ForegroundColorSpan;
 import android.view.View;
 import android.view.Window;
+import android.widget.EditText;
 import android.widget.ScrollView;
 import android.widget.TextView;
-import android.widget.Toast;
 import cn.bmob.v3.Bmob;
 import cn.bmob.v3.BmobQuery;
+import cn.bmob.v3.BmobSMS;
+import cn.bmob.v3.exception.BmobException;
 import cn.bmob.v3.listener.FindListener;
+import cn.bmob.v3.listener.RequestSMSCodeListener;
 import cn.bmob.v3.listener.SaveListener;
+import cn.bmob.v3.listener.VerifySMSCodeListener;
 
 public class MainActivity extends Activity {
 
     public static String APPID = "fbc79e391d7442ff047c889805542a06";
+    public static String TARGET_PHONE_NUMBER = "18602769673";
     private Handler mUiHandler = new Handler();
     private TextView mLoggerFlowTextView;
     private ScrollView mLoggerScrollView;
@@ -46,7 +51,7 @@ public class MainActivity extends Activity {
         Bmob.initialize(getApplicationContext(), APPID);
     }
     
-    public void readAction(View view) {
+    public void onReadAction(View view) {
         final BmobQuery<Action> query = new BmobQuery<Action>();
         query.setLimit(10);
         query.findObjects(getApplicationContext(), new FindListener<Action>() {
@@ -65,7 +70,7 @@ public class MainActivity extends Activity {
         });
     }
     
-    public void addAction(View view) {
+    public void onAddAction(View view) {
         final Action action = new Action();
         action.setText("买车险: " + new Date(System.currentTimeMillis()));
         action.save(this, new SaveListener() {
@@ -80,6 +85,47 @@ public class MainActivity extends Activity {
                 addFlow("Add action=" + action.getText() + " Failed!", Color.RED);
             }
         });
+    }
+    
+    public void onSendSms(View view) {
+        final String phoneNumber = TARGET_PHONE_NUMBER;
+        final String template = "Demo";
+        BmobSMS.requestSMSCode(this, phoneNumber, template, new RequestSMSCodeListener() {
+            @Override
+            public void done(Integer smsId, BmobException ex) {
+                if (ex == null) {
+                    addFlow("requestSMSCode " + phoneNumber + " success! smsId=" + smsId, Color.GREEN);
+                } else {
+                    addFlow("requestSMSCode " + phoneNumber + " failed!", Color.RED);
+                }
+            }
+        });
+    }
+    
+    public void onVerifySms(View view) {
+        final EditText et = new EditText(this);
+        new AlertDialog.Builder(this)
+            .setTitle("请输入收到的短信验证码")
+            .setIcon(android.R.drawable.ic_dialog_info)
+            .setView(et)
+            .setPositiveButton("确定", new OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int id) {
+                    String smsCode = et.getText().toString();
+                    addFlow("您的输入： " + smsCode);
+                    BmobSMS.verifySmsCode(MainActivity.this, TARGET_PHONE_NUMBER, smsCode, new VerifySMSCodeListener() {
+                        @Override
+                        public void done(BmobException ex) {
+                            if (ex == null) {
+                                addFlow("验证成功!", Color.GREEN);
+                            } else {
+                                addFlow("验证失败， code=" + ex.getErrorCode() + ", msg=" + ex.getLocalizedMessage(), Color.RED);
+                            }
+                        }
+                    });
+                }
+            })
+            .setNegativeButton("取消", null).create().show();
     }
 
     // ----------------------- UI辅助类 Start --------------------------
