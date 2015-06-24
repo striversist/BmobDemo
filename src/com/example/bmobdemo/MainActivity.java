@@ -127,6 +127,24 @@ public class MainActivity extends Activity {
             })
             .setNegativeButton("取消", null).create().show();
     }
+    
+    public void onCreateTable(View view) {
+        String companyName = "IBM";
+        addFlow("onCreateTable " + Company.class.getName());
+        Company company = new Company();
+        company.setName(companyName);
+        company.save(getApplicationContext(), new SaveListener() {
+            @Override
+            public void onSuccess() {
+                addFlow("save onSuccess", Color.GREEN);
+            }
+            
+            @Override
+            public void onFailure(int code, String msg) {
+                addFlow("save onFailure: code=" + code + ", msg=" + msg, Color.RED);
+            }
+        });
+    }
 
     // ----------------------- UI辅助类 Start --------------------------
     private void addFlow(String flow) {
@@ -156,10 +174,10 @@ public class MainActivity extends Activity {
         }, 100);    // 待ScrollView中的内容全部显示出来，才会有效（否则无效果）。故延时一会儿
     }
     
-    private interface SingleChoiceListener {
+    public interface SingleChoiceListener {
         public void onItemSeleted(String item);
     }
-    private void showSingleChoiceDialog(final String[] items, final SingleChoiceListener listener) {
+    public void showSingleChoiceDialog(final String[] items, final SingleChoiceListener listener) {
         if (items == null || items.length == 0 || listener == null)
             return;
         

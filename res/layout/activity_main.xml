@@ -38,6 +38,12 @@
             android:layout_height="wrap_content"
             android:onClick="onVerifySms"
             android:text="verifySms" />
+	    
+	    <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:onClick="onCreateTable"
+            android:text="createTable" />
     </LinearLayout>
     </HorizontalScrollView>
     
