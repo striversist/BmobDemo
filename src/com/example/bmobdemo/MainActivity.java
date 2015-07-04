@@ -4,6 +4,9 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
@@ -24,16 +27,26 @@ import android.widget.TextView;
 import cn.bmob.v3.Bmob;
 import cn.bmob.v3.BmobQuery;
 import cn.bmob.v3.BmobSMS;
+import cn.bmob.v3.BmobUser;
+import cn.bmob.v3.BmobUser.BmobThirdUserAuth;
 import cn.bmob.v3.exception.BmobException;
 import cn.bmob.v3.listener.FindListener;
+import cn.bmob.v3.listener.OtherLoginListener;
 import cn.bmob.v3.listener.RequestSMSCodeListener;
 import cn.bmob.v3.listener.SaveListener;
 import cn.bmob.v3.listener.VerifySMSCodeListener;
+
+import com.tencent.connect.UserInfo;
+import com.tencent.connect.auth.QQAuth;
+import com.tencent.tauth.IUiListener;
+import com.tencent.tauth.Tencent;
+import com.tencent.tauth.UiError;
 
 public class MainActivity extends Activity {
 
     public static String APPID = "fbc79e391d7442ff047c889805542a06";
     public static String TARGET_PHONE_NUMBER = "18602769673";
+    private static String ACTION_LOGIN_WITH_QQ = "login_with_qq";
     private Handler mUiHandler = new Handler();
     private TextView mLoggerFlowTextView;
     private ScrollView mLoggerScrollView;
@@ -49,6 +62,18 @@ public class MainActivity extends Activity {
         mLoggerScrollView = (ScrollView) findViewById(R.id.logger_sv);
         
         Bmob.initialize(getApplicationContext(), APPID);
+    }
+    
+    public void onLogin(View view) {
+        String[] items = new String[] { ACTION_LOGIN_WITH_QQ };
+        showSingleChoiceDialog(items, new SingleChoiceListener() {
+            @Override
+            public void onItemSeleted(String item) {
+                if (TextUtils.equals(item, ACTION_LOGIN_WITH_QQ)) {
+                    qqAuthorize();
+                }
+            }
+        });
     }
     
     public void onReadAction(View view) {
@@ -142,6 +167,97 @@ public class MainActivity extends Activity {
             @Override
             public void onFailure(int code, String msg) {
                 addFlow("save onFailure: code=" + code + ", msg=" + msg, Color.RED);
+            }
+        });
+    }
+    
+    public static Tencent mTencent;
+    public static QQAuth mQQAuth;
+    private void qqAuthorize() {
+        if (mTencent == null) {
+            mTencent = Tencent.createInstance(Constants.QQ_APP_ID, getApplicationContext());
+            if (mTencent == null) {
+                addFlow("Tencent.createInstance failed", Color.RED);
+                return;
+            }
+        }
+        if (mQQAuth == null) {
+            mQQAuth = QQAuth.createInstance(Constants.QQ_APP_ID, getApplicationContext());
+            if (mQQAuth == null) {
+                addFlow("QQAuth.createInstance failed", Color.RED);
+                return;
+            }
+        }
+        String scope = "get_user_info";
+        mTencent.logout(this);
+        mTencent.login(this, scope, new IUiListener() {
+            @Override
+            public void onComplete(Object arg0) {
+                addFlow("onComplete start");
+                if (arg0 != null) {
+                    JSONObject jsonObject = (JSONObject) arg0;
+                    try {
+                        String token = jsonObject.getString(com.tencent.connect.common.Constants.PARAM_ACCESS_TOKEN);
+                        String expires = jsonObject.getString(com.tencent.connect.common.Constants.PARAM_EXPIRES_IN);
+                        String openId = jsonObject.getString(com.tencent.connect.common.Constants.PARAM_OPEN_ID);
+                        BmobThirdUserAuth authInfo = new BmobThirdUserAuth(
+                                BmobThirdUserAuth.SNS_TYPE_QQ, token, expires,
+                                openId);
+                        UserInfo info = new UserInfo(MainActivity.this, mTencent.getQQToken());
+                        info.getUserInfo(new IUiListener() {
+                            @Override
+                            public void onComplete(Object obj) {
+                                if (obj != null) {
+                                    JSONObject jsonObject = (JSONObject) obj;
+                                    addFlow("getUserInfo success", Color.GREEN);
+                                    addFlow("返回：" + jsonObject);
+                                }
+                            }
+                            
+                            @Override
+                            public void onError(UiError uierror) {
+                                addFlow("getUserInfo failed, msg=" + uierror.errorMessage, Color.RED);
+                            }
+                            
+                            @Override
+                            public void onCancel() {
+                                addFlow("getUserInfo cancel", Color.RED);
+                            }
+                        });
+                        loginWithAuth(authInfo);
+                    } catch (JSONException e) {
+                    }
+                }
+                addFlow("onComplete end");
+            }
+
+            @Override
+            public void onError(UiError arg0) {
+                addFlow("QQ授权出错：" + arg0.errorCode + "--" + arg0.errorDetail, Color.RED);
+            }
+
+            @Override
+            public void onCancel() {
+                addFlow("取消qq授权", Color.YELLOW);
+            }
+        });
+    }
+    
+    private void loginWithAuth(final BmobThirdUserAuth authInfo){
+        BmobUser.loginWithAuthData(MainActivity.this, authInfo, new OtherLoginListener() {
+            @Override
+            public void onSuccess(JSONObject userAuth) {
+                addFlow("loginWithAuth: " + authInfo.getSnsType() + "success", Color.GREEN);
+                addFlow("返回:" + userAuth);
+//                Intent intent = new Intent(MainActivity.this, MainActivity.class);
+//                intent.putExtra("json", userAuth.toString());
+//                intent.putExtra("from", authInfo.getSnsType());
+//                startActivity(intent);
+            }
+            
+            @Override
+            public void onFailure(int code, String msg) {
+                addFlow("第三方登陆失败：" + msg, Color.RED);
             }
         });
     }
