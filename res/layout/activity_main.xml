@@ -50,6 +50,12 @@
             android:layout_height="wrap_content"
             android:onClick="onCreateTable"
             android:text="createTable" />
+	    
+	    <Button
+	        android:layout_width="wrap_content"
+	        android:layout_height="wrap_content"
+	        android:onClick="onGetFile"
+	        android:text="getFile" />
     </LinearLayout>
     </HorizontalScrollView>
     

@@ -171,6 +171,24 @@ public class MainActivity extends Activity {
         });
     }
     
+    public void onGetFile(View view) {
+        final BmobQuery<Picture> query = new BmobQuery<Picture>();
+        query.findObjects(getApplicationContext(), new FindListener<Picture>() {
+
+            @Override
+            public void onError(int error, String msg) {
+                addFlow("onError: msg=" + msg);
+            }
+
+            @Override
+            public void onSuccess(List<Picture> pictures) {
+                for (Picture pic : pictures) {
+                    addFlow("onSuccess: url=" + pic.getFile().getFileUrl(getApplicationContext()));
+                }
+            }
+        });
+    }
+    
     public static Tencent mTencent;
     public static QQAuth mQQAuth;
     private void qqAuthorize() {
